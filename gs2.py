@@ -39,17 +39,15 @@ class GS2File(object):
 
         return ret_str
 
-    def process_file(self, filename):
+    def process_file(self, filename, maxlines=-1):
         f = open(filename, 'r', encoding="latin-1")  # Open the file so we can read it
         self.name = str(os.path.split(filename)[1].strip())  # Set name of object
         current_section = None
         current_line = 1
         max_line = 100
         for line in f:
-
-            if current_line > max_line:
-                pass
-                # break
+            if current_line > max_line and maxlines is not -1:
+                break
 
             # Skip blank lines
             if line.strip() == "":

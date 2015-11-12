@@ -2,6 +2,16 @@
 GS2-filer/
 *.json
 
+#intellij
+out/
+.idea/
+*.iml
+*.iws
+.DS_Store
+log/
+target/
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

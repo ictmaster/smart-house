@@ -1,28 +1,34 @@
 #!/usr/bin/env python
 import os
 import time
-
 import gs2
 
 startTime = time.time()
 
-FILE_LOCATION = "./GS2-filer/"
+FILE_LOCATION = "./GS2-filer/"  # Put gs2 files here
+JSON_FILE = "all_data.json"
+gs2s = []
 try:
-    all_files = [f for f in os.listdir(FILE_LOCATION) if
-                 os.path.isfile(os.path.join(FILE_LOCATION, f))]  # gets all files in folder
-
-    files = [f for f in all_files if
-             f.startswith("uke") and f.lower().endswith(".gs2")]  # gets files that starts with uke
-    gs2s = []
-    for f in files:
-        data_object = gs2.GS2File()
-    data_object.process_file(FILE_LOCATION + f)
-    gs2s.append(data_object)
-
-    # gs2.save_json(gs2s, "uke_data.json")
-    gs2.load_json(gs2s, "uke_data.json")
-
+    gs2.load_json(gs2s, JSON_FILE)
 except FileNotFoundError as ex:
-    print(ex.strerror+": ", ex.filename)
+    print(ex.strerror + ": ", ex.filename)
+    if ex.filename == JSON_FILE:
+        try:
+            all_files = [f for f in os.listdir(FILE_LOCATION) if
+                         os.path.isfile(os.path.join(FILE_LOCATION, f))]  # gets all files in folder
+
+            files = [f for f in all_files if
+                     f.lower().endswith(".gs2")]  # gets files that starts with uke
+            for f in files:
+                print("Processing", FILE_LOCATION + f + "...")
+                data_object = gs2.GS2File()
+                file = data_object.process_file(FILE_LOCATION + f)
+                gs2s.append(data_object)
+                print(FILE_LOCATION + f, "processed...")
+            print("Saving to json:", JSON_FILE)
+            gs2.save_json(gs2s, JSON_FILE)
+            print("Saved to json file:", JSON_FILE)
+        except FileNotFoundError as ex2:
+            print(ex2.strerror + ": ", ex2.filename)
 
 print("Script took", time.time() - startTime, "seconds...")

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import os
 import time
 import gs2
@@ -9,7 +9,7 @@ FILE_LOCATION = "./GS2-filer/"  # Put gs2 files here
 JSON_FILE = "all_data.json"
 gs2s = []
 try:
-    gs2.load_json(gs2s, JSON_FILE)
+    gs2.load_json(JSON_FILE, gs2s)
 except FileNotFoundError as ex:
     print(ex.strerror + ": ", ex.filename)
     if ex.filename == JSON_FILE:

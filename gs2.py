@@ -1,9 +1,9 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import os
 import json
 
 
-def load_json(gs2_list, filename):
+def load_json(filename, gs2_list=[]):
     del gs2_list[:]
     with open(filename, 'r') as json_file:
         data = json.load(json_file)
@@ -18,6 +18,7 @@ def load_json(gs2_list, filename):
                     tmp_section.properties[propName] = propValue
                 tmp_file.sections.append(tmp_section)
             gs2_list.append(tmp_file)
+    return gs2_list
 
 
 def save_json(gs2_list, filename):

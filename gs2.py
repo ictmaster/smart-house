@@ -75,5 +75,9 @@ class GS2Section(object):
         self.name = None
         self.properties = {}
 
+    def get_values(self):
+        if "Value" in self.properties:
+            return self.properties["Value"].translate({ord(i): None for i in '<>'}).split()
+
     def __repr__(self):
         return json.dumps(self.__dict__)

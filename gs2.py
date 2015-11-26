@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import os
 import json
+import jmath
 
 
 def load_json(filename, gs2_list=[]):
@@ -77,7 +78,11 @@ class GS2Section(object):
 
     def get_values(self):
         if "Value" in self.properties:
-            return self.properties["Value"].translate({ord(i): None for i in '<>'}).split()
+            return [float(x) for x in self.properties["Value"].translate({ord(i): None for i in '<>'}).split()]
+
+    def get_peak_threshold(self):
+        return jmath.standard_deviation(self.get_values())
+
 
     def __repr__(self):
         return json.dumps(self.__dict__)

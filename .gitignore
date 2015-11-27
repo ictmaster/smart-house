@@ -1,6 +1,7 @@
 #This project only
 GS2-filer/
 *.json
+open.sh
 
 #intellij
 out/

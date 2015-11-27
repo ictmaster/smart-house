@@ -46,9 +46,9 @@ class GS2File(object):
         self.name = str(os.path.split(filename)[1].strip())  # Set name of object
         current_section = None
         current_line = 1
-        max_line = 100
+        # max_line = 100
         for line in f:
-            if current_line > max_line and maxlines is not -1:
+            if current_line > maxlines and maxlines is not -1:
                 break
 
             # Skip blank lines

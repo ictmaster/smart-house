@@ -46,7 +46,7 @@ class GS2File(object):
         self.name = str(os.path.split(filename)[1].strip())  # Set name of object
         current_section = None
         current_line = 1
-        # max_line = 100
+
         for line in f:
             if current_line > maxlines and maxlines is not -1:
                 break
@@ -70,6 +70,14 @@ class GS2File(object):
             current_line += 1
         f.close()
 
+    def get_values(self):
+        value_list = []
+        for i,section in enumerate(self.sections):
+            if "Value" in section.properties:
+                values = section.get_values()
+                if values is not None:
+                    value_list.append(values)
+        return value_list
 
 class GS2Section(object):
     def __init__(self):
@@ -78,11 +86,9 @@ class GS2Section(object):
 
     def get_values(self):
         if "Value" in self.properties:
-            return [float(x) for x in self.properties["Value"].translate({ord(i): None for i in '<>'}).split()]
-
-    def get_peak_threshold(self):
-        return jmath.standard_deviation(self.get_values())
-
+            values = [float(x) for x in self.properties["Value"].translate({ord(i): None for i in '<>'}).split() if jmath.is_float(x)]
+            if values is not None and len(values) > 0:
+                return values
 
     def __repr__(self):
         return json.dumps(self.__dict__)

@@ -2,6 +2,7 @@
 import os
 import json
 import jmath
+from jdebug import is_debug
 
 
 def load_json(filename, gs2_list=[]):
@@ -72,7 +73,13 @@ class GS2File(object):
 
     def get_values(self):
         value_list = []
-        for i,section in enumerate(self.sections):
+
+        if is_debug:
+            sects = self.sections[:500]
+        else:
+            sects = self.sections
+
+        for i,section in enumerate(sects):
             if "Value" in section.properties:
                 values = section.get_values()
                 if values is not None:

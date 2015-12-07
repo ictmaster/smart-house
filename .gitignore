@@ -2,7 +2,8 @@
 GS2-filer/
 *.json
 open.sh
-
+*.db
+*.bak
 #intellij
 out/
 .idea/

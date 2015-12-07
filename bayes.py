@@ -6,6 +6,7 @@ import math
 import jmath
 import json
 from jdebug import is_debug
+import database
 from collections import defaultdict
 
 def get_vector(values, pos=10, size=10):

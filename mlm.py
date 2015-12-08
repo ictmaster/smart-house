@@ -38,6 +38,11 @@ def sort_data(dataset):
     sql_connection = sqlite3.connect(database.db_name)
     cur = sql_connection.cursor()
 
+    # Lets not fuck up sorted data by creating duplicate data
+    if cur.execute('select count(*) from data;').fetchall()[0][0] != 0:
+        print("There is already rows in the table...")
+        return
+
     for set_num, data in enumerate(dataset):
             print("Sorting set",set_num)
             sort_data_set_time_start = time.time()
@@ -62,6 +67,12 @@ def summarize_by_class():
     print("Summarizing...")
     con = sqlite3.connect(database.db_name)
     c = con.cursor()
+
+    # Lets not fuck up summaries by creating duplicate data
+    if c.execute('select count(*) from summaries;').fetchall()[0][0] != 0:
+        print("There is already rows in the table...")
+        return
+
     for group, groupval in get_class_values().items():
         print("Summarizing class",group)
         # Iterate over each of the attributes (components of the vector)
@@ -80,7 +91,7 @@ def summarize_by_class():
 
             while fetched_rows < row_limit or row_limit == -1:
                 iter_start_time = time.time()
-                # Set the limit to limit or however many rows that are left if less than limit
+                # Set the limit to limit or num of rows that are left
                 limit = limit if (limit+offset < row_limit or row_limit == -1) else (row_limit - fetched_rows)
                 # Execute sql statement
                 data = c.execute('select vector from data where class=? limit ? offset ?', [group, limit, offset]).fetchall()
@@ -100,26 +111,45 @@ def summarize_by_class():
                     atrib_i.append(vec[i])
 
                 print("Processed",str(fetched_rows)+", last",data_len,"processed in",time.time() - iter_start_time,"seconds...")
-            #Calculate the summary
+            # Calculate the summary
             try:
-                atrib_sum = (jmath.mean(atrib_i), jmath.standard_deviation(atrib_i))
+                atrib_sum = [jmath.mean(atrib_i), jmath.standard_deviation(atrib_i)]
             except ZeroDivisionError as zde:
                 import pdb;pdb.set_trace()
-
             print(atrib_sum)
+            c.execute('insert into summaries (summary, vector_index, class) values (?, ?, ?);',[json.dumps(atrib_sum), i, group])
+            con.commit()
+    con.close()
     print("Summarizing took",time.time()-summarize_time_start,"seconds...")
 
+def calculate_class_probabilities(summaries, input_vector):
+        probabilities = {}
+        for classValue, classSummaries in summaries.iteritems():
+                probabilities[classValue] = 1
+                for i in range(len(classSummaries)):
+                        mean, stdev = classSummaries[i]
+                        x = input_vector[i]
+                        probabilities[classValue] *= calculateProbability(x, mean, stdev)
+        return probabilities
+
+def predict(summaries, input_vector):
+        probabilities = calculateClassProbabilities(summaries, input_vector)
+        bestLabel, bestProb = None, -1
+        for classValue, probability in probabilities.iteritems():
+                if bestLabel is None or probability > bestProb:
+                        bestProb = probability
+                        bestLabel = classValue
+        return bestLabel
 
 
-
-
-start_time = time.time()
-#dataset = gs2.load_json('all_data.json')
-#train,test = split_dataset(dataset, 0.67)
 if __name__ == '__main__':
+    start_time = time.time()
+    dataset = gs2.load_json('all_data.json')
+    train,test = split_dataset(dataset, 0.67)
+    # TODO: Resort and resummarize so we know which files are training and which files are testing
     if 'resort' in sys.argv:
         sort_data(train)
-
-    summarize_by_class()
+    if 'resummarize' in sys.argv:
+        summarize_by_class()
 
 print("Script finished in",time.time()-start_time,"seconds...")

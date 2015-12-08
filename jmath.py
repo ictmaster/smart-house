@@ -12,7 +12,7 @@ def standard_deviation(numbers):
 	var = sum([pow(x-avg,2) for x in numbers])/float(len(numbers)-1)
 	return math.sqrt(var)
 
-def calculateProbability(x, mean, stdev):
+def calculate_probability(x, mean, stdev):
 	exponent = math.exp(-(math.pow(x-mean,2)/(2*math.pow(stdev,2))))
 	return (1 / (math.sqrt(2*math.pi) * stdev)) * exponent
 

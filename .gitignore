@@ -1,5 +1,6 @@
 #This project only
 GS2-filer/
+bak/
 *.json
 open.sh
 *.db

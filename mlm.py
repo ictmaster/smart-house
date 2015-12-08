@@ -8,7 +8,7 @@ import random
 import sqlite3
 import sys
 import time
-
+import os
 
 def get_class_values():
     return {'nopeak':0, 'peak':1}
@@ -21,14 +21,41 @@ def get_classification(numbers, value):
 def get_vector(numbers, pos, size=10):
     return numbers[max(pos-size,0):pos]
 
+def get_vector_f(numbers, pos, size=jmath.vector_length):
+    vec = numbers[max(pos-size,0):pos]
+    vec = [-1.0]*(jmath.vector_length-len(vec))+vec
+    return vec
+
 def split_dataset(dataset, split_ratio):
     trainSize = int(len(dataset) * split_ratio)
-    trainSet = []
-    copy = list(dataset)
-    while len(trainSet) < trainSize:
-        index = random.randrange(len(copy))
-        trainSet.append(copy.pop(index))
-    return [trainSet, copy]
+    train_set = []
+    ratio_fname = 'test_train_ratio.json'
+    if os.path.isfile(ratio_fname):
+        print("There seems to be a ratio file already, sorting like file if names are equal...")
+        names_with_index = {dset.name:i for i, dset in enumerate(dataset)}
+        with open(ratio_fname, 'r') as ttr:
+            d = json.load(ttr)
+            # Check if files are the same
+            if set(names_with_index.keys()) == set([item for sublist in d.values() for item in sublist]):
+                # TODO: implement sorting stuff so its equal to file
+            else:
+                print("Files doesn't match, quitting...")
+                sys.exit(1)
+
+
+        return [train_set, test_set]
+
+
+    test_set = list(dataset)
+    while len(train_set) < trainSize:
+        index = random.randrange(len(test_set))
+        train_set.append(test_set.pop(index))
+    # Save file for remembering which files are used for testing
+    with open(ratio_fname, 'w') as ttr:
+        d = {'training':[x.name for x in train_set],
+        'testing':[x.name for x in test_set]}
+        json.dump(d, ttr)
+    return [train_set, test_set]
 
 def sort_data(dataset):
     print("Sorting data into database...")
@@ -124,18 +151,18 @@ def summarize_by_class():
 
 def calculate_class_probabilities(summaries, input_vector):
         probabilities = {}
-        for classValue, classSummaries in summaries.iteritems():
+        for classValue, classSummaries in summaries.items():
                 probabilities[classValue] = 1
                 for i in range(len(classSummaries)):
                         mean, stdev = classSummaries[i]
                         x = input_vector[i]
-                        probabilities[classValue] *= calculateProbability(x, mean, stdev)
+                        probabilities[classValue] *= jmath.calculate_probability(x, mean, stdev)
         return probabilities
 
 def predict(summaries, input_vector):
-        probabilities = calculateClassProbabilities(summaries, input_vector)
+        probabilities = calculate_class_probabilities(summaries, input_vector)
         bestLabel, bestProb = None, -1
-        for classValue, probability in probabilities.iteritems():
+        for classValue, probability in probabilities.items():
                 if bestLabel is None or probability > bestProb:
                         bestProb = probability
                         bestLabel = classValue
@@ -151,5 +178,30 @@ if __name__ == '__main__':
         sort_data(train)
     if 'resummarize' in sys.argv:
         summarize_by_class()
+
+
+    summaries = database.get_summaries()
+    if 'test' in sys.argv:
+        correct = 0
+        total = 0
+        nopeak = 0
+        peak = 0
+        for s in range(10,50):
+            try:
+                x = test[0].sections[s].get_values()
+                for pos,val in enumerate(x):
+                    total += 1
+                    prediction = predict(summaries, get_vector_f(x,pos))
+                    realval = get_classification(x,val)
+                    if prediction == 'nopeak':
+                        nopeak += 1
+                    if prediction == 'peak':
+                        peak += 1
+                    if prediction == realval:
+                        correct += 1
+            except TypeError:
+                continue
+        print('Accuracy {0}%, predicted peak {1} times and nopeak {2}'.format(correct/total*100, peak, nopeak))
+
 
 print("Script finished in",time.time()-start_time,"seconds...")

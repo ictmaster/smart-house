@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 import math
 
+
+vector_length = 10
+
 def mean(numbers):
 	return sum(numbers)/float(len(numbers))
 

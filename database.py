@@ -58,5 +58,3 @@ if __name__ == "__main__":
 
     if 'dropdb' in sys.argv and input("YOU SURE ABOUT THIS, you have backup?!") == 'yes':
         drop_database()
-
-    data = get_summaries()

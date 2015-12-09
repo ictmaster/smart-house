@@ -27,8 +27,9 @@ def get_vector_f(numbers, pos, size=jmath.vector_length):
     return vec
 
 def split_dataset(dataset, split_ratio):
-    trainSize = int(len(dataset) * split_ratio)
-    train_set = []
+    train_size  = int(len(dataset) * split_ratio)
+    train_set   = []
+    test_set    = []
     ratio_fname = 'test_train_ratio.json'
     if os.path.isfile(ratio_fname):
         print("There seems to be a ratio file already, sorting like file if names are equal...")
@@ -37,17 +38,18 @@ def split_dataset(dataset, split_ratio):
             d = json.load(ttr)
             # Check if files are the same
             if set(names_with_index.keys()) == set([item for sublist in d.values() for item in sublist]):
-                # TODO: implement sorting stuff so its equal to file
+                for name, index in names_with_index.items():
+                    if name in d['training']:
+                        train_set.append(dataset[index])
+                    else:
+                        test_set.append(dataset[index])
             else:
                 print("Files doesn't match, quitting...")
                 sys.exit(1)
-
-
         return [train_set, test_set]
 
-
     test_set = list(dataset)
-    while len(train_set) < trainSize:
+    while len(train_set) < train_size:
         index = random.randrange(len(test_set))
         train_set.append(test_set.pop(index))
     # Save file for remembering which files are used for testing
@@ -93,7 +95,7 @@ def summarize_by_class():
     summarize_time_start = time.time()
     print("Summarizing...")
     con = sqlite3.connect(database.db_name)
-    c = con.cursor()
+    c   = con.cursor()
 
     # Lets not fuck up summaries by creating duplicate data
     if c.execute('select count(*) from summaries;').fetchall()[0][0] != 0:
@@ -108,13 +110,13 @@ def summarize_by_class():
 
             # Iterate through many rows
             # by iterating through parts of the entire table
-            row_limit = 100000 if is_debug else -1
-            limit = 25000 if is_debug else 1000000
-            offset = 0
+            row_limit    = 100000 if is_debug else -1
+            limit        = 25000 if is_debug else 1000000
+            offset       = 0
             fetched_rows = 0
-
             # Where to store the temporary vector components
-            atrib_i = []
+            atrib_i      = []
+
 
             while fetched_rows < row_limit or row_limit == -1:
                 iter_start_time = time.time()
@@ -171,7 +173,7 @@ def predict(summaries, input_vector):
 
 if __name__ == '__main__':
     start_time = time.time()
-    dataset = gs2.load_json('all_data.json')
+    dataset    = gs2.load_json('all_data.json')
     train,test = split_dataset(dataset, 0.67)
     # TODO: Resort and resummarize so we know which files are training and which files are testing
     if 'resort' in sys.argv:
@@ -183,9 +185,9 @@ if __name__ == '__main__':
     summaries = database.get_summaries()
     if 'test' in sys.argv:
         correct = 0
-        total = 0
-        nopeak = 0
-        peak = 0
+        total   = 0
+        nopeak  = 0
+        peak    = 0
         for s in range(10,50):
             try:
                 x = test[0].sections[s].get_values()

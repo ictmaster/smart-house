@@ -77,14 +77,14 @@ def sort_data(dataset):
             sort_data_set_time_start = time.time()
 
             for section_number, section in enumerate(data.get_values()):
-                threshold = jmath.get_peak_threshold(section)
+                try:
+                    threshold = jmath.get_peak_threshold(section)
+                except ZeroDivisionError:
+                    # Skip section if stddev is not possible
+                    break
                 for pos, value in enumerate(section):
-                    try:
-                        classification = 'peak' if value > threshold else 'nopeak'
-                        cur.execute("insert into data ('value','vector','class') values (?,?,?)",[value, json.dumps(get_vector(section, pos, jmath.vector_length)), classification])
-                    except ZeroDivisionError:
-                        # Skip section if stddev is not possible
-                        break
+                    classification = 'peak' if value > threshold else 'nopeak'
+                    cur.execute("insert into data ('value','vector','class') values (?,?,?)",[value, json.dumps(get_vector(section, pos, jmath.vector_length)), classification])
             sql_connection.commit()
             print("Sorting set",set_num,"took",time.time()-sort_data_set_time_start,"seconds...")
 
@@ -106,7 +106,7 @@ def summarize_by_class():
         print("Summarizing class",group)
         # Iterate over each of the attributes (components of the vector)
         for i in range(0,jmath.vector_length):
-            print("Began processing vector index",i)
+            print("Began processing vector index",i,"in class",group)
 
             # Iterate through many rows
             # by iterating through parts of the entire table
@@ -181,29 +181,26 @@ if __name__ == '__main__':
     if 'resummarize' in sys.argv:
         summarize_by_class()
 
-
     summaries = database.get_summaries()
     if 'test' in sys.argv:
-        correct = 0
-        total   = 0
-        nopeak  = 0
-        peak    = 0
-        for s in range(10,50):
-            try:
-                x = test[0].sections[s].get_values()
-                for pos,val in enumerate(x):
-                    total += 1
-                    prediction = predict(summaries, get_vector_f(x,pos))
-                    realval = get_classification(x,val)
-                    if prediction == 'nopeak':
-                        nopeak += 1
-                    if prediction == 'peak':
-                        peak += 1
-                    if prediction == realval:
-                        correct += 1
-            except TypeError:
-                continue
-        print('Accuracy {0}%, predicted peak {1} times and nopeak {2}'.format(correct/total*100, peak, nopeak))
+        num_peaks       = 0
+        predicted_peaks = 0
+        for ts in test:
+            for s in ts.sections:
+                try:
+                    x = s.get_values()
+                    for pos,val in enumerate(x):
+                        prediction = predict(summaries, get_vector_f(x,pos))
+                        realval = get_classification(x,val)
+
+                        if realval == 'peak':
+                            num_peaks += 1
+                        if prediction == realval and prediction == 'peak':
+                            predicted_peaks += 1
+
+                except TypeError:
+                    continue
+        print('Predicted',predicted_peaks,"out of a total",num_peaks,"...")
 
 
 print("Script finished in",time.time()-start_time,"seconds...")

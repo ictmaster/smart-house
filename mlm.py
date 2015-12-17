@@ -27,6 +27,7 @@ def get_vector_f(numbers, pos, size=jmath.vector_length):
     return vec
 
 def split_dataset(dataset, split_ratio):
+    print("Splitting dataset...")
     train_size  = int(len(dataset) * split_ratio)
     train_set   = []
     test_set    = []
@@ -170,6 +171,17 @@ def predict(summaries, input_vector):
                         bestLabel = classValue
         return bestLabel
 
+def print_accuracy(total, predicted, true_pred, false_pred):
+    print("""
+        Predicted: {0} out of {1} correct! ({2}%)
+        Predicted: {3} out of {4} peaks correct! ({5}%)
+        Predicted: {6} out of {7} nopeaks correct! ({8}%)
+        Total accuracy: {9}%""".format(
+        sum(true_pred.values()), sum(total.values()), 100*(sum(true_pred.values())/float(sum(total.values()))),
+        true_pred['peak'], total['peak'], 100*(true_pred['peak']/float(total['peak'])),
+        true_pred['nopeak'], total['nopeak'], 100*(true_pred['nopeak']/float(total['nopeak'])),
+        100*(sum(true_pred.values())/float(sum(total.values())))
+        ))
 
 if __name__ == '__main__':
     start_time = time.time()
@@ -183,9 +195,11 @@ if __name__ == '__main__':
 
     summaries = database.get_summaries()
     if 'test' in sys.argv:
-        num_peaks       = 0
-        predicted_peaks = 0
+        t_predictions = {'total':{'peak':0, 'nopeak':0},'predicted':{'peak':0, 'nopeak':0},'true_pred':{'peak':0, 'nopeak':0},'false_pred':{'peak':0, 'nopeak':0}}
         for ts in test:
+            print("Testing "+ts.name+"...")
+            f_predictions = {'total':{'peak':0, 'nopeak':0},'predicted':{'peak':0, 'nopeak':0},'true_pred':{'peak':0, 'nopeak':0},'false_pred':{'peak':0, 'nopeak':0}}
+            file_time_start = time.time()
             for s in ts.sections:
                 try:
                     x = s.get_values()
@@ -193,14 +207,24 @@ if __name__ == '__main__':
                         prediction = predict(summaries, get_vector_f(x,pos))
                         realval = get_classification(x,val)
 
-                        if realval == 'peak':
-                            num_peaks += 1
-                        if prediction == realval and prediction == 'peak':
-                            predicted_peaks += 1
-
+                        f_predictions['predicted'][prediction] += 1
+                        f_predictions['total'][realval] += 1
+                        t_predictions['predicted'][prediction] += 1
+                        t_predictions['total'][realval] += 1
+                        if prediction == realval:
+                            f_predictions['true_pred'][prediction] += 1
+                            t_predictions['true_pred'][prediction] += 1
+                        else:
+                            f_predictions['false_pred'][prediction] += 1
+                            t_predictions['false_pred'][prediction] += 1
                 except TypeError:
                     continue
-        print('Predicted',predicted_peaks,"out of a total",num_peaks,"...")
+            print_accuracy(f_predictions['total'], f_predictions['predicted'], f_predictions['true_pred'], f_predictions['false_pred'])
+            print("\n\t"+ts.name+" tested in "+str(time.time() - file_time_start)+" seconds...\n\n")
+        print("Total:")
+        print("\t" + str(t_predictions))
+        print_accuracy(t_predictions['total'], t_predictions['predicted'], t_predictions['true_pred'], t_predictions['false_pred'])
+        print("\n")
 
 
 print("Script finished in",time.time()-start_time,"seconds...")
